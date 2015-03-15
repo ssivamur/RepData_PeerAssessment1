@@ -33,13 +33,15 @@ The dataset is stored in a comma-separated-value (CSV) file and there are a tota
 
 Initially the connection is done with the help of UNZ to the activity.zip file that was provided as part of this project.
 
-```{r}
+
+```r
 actcon <- unz("activity.zip","activity.csv")
 ```
 
 Read the file in table format and create a ACTIVITY data frame. 
 
-```{r}
+
+```r
   activity <- read.table(file = actcon,header = TRUE,sep = ",")
 activity$datetime <- as.POSIXct(
   with(
@@ -56,7 +58,8 @@ activity$datetime <- as.POSIXct(
 
 Load the required libraries including ggplots, scales, grid and gridextra
 
-```{r}
+
+```r
 library(ggplot2)
 library(scales)
 library(grid)
@@ -65,7 +68,8 @@ library(gridExtra)
 
 Aggregate the number of steps and store the value in stepsbyDay variable.
 
-```{r}
+
+```r
 stepsbyDay <- setNames(
   aggregate(
     steps~as.Date(date),
@@ -74,12 +78,12 @@ stepsbyDay <- setNames(
     na.rm = TRUE),
   c("date","steps")
   )
-
 ```
 
 Generate the histogram 
 
-```{r}
+
+```r
 # Generate the Histogram.
 hist1 <- ggplot(stepsbyDay,aes(x=date,y=steps)) +
   geom_bar(stat="identity") +
@@ -87,24 +91,39 @@ hist1 <- ggplot(stepsbyDay,aes(x=date,y=steps)) +
 print(hist1)
 ```
 
+![plot of chunk unnamed-chunk-5](assets/fig/unnamed-chunk-5-1.png) 
+
 Summarize the StepsByDate with the following code:
 
-```{r}
+
+```r
   summary(stepsbyDay$steps)
+```
+
+```
+##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+##      41    8841   10760   10770   13290   21190
 ```
 
 Pring the mean steps by date and median steps by date:
 
-```{r}
+
+```r
   mmsteps <- c(mean = mean(stepsbyDay$steps),median = median(stepsbyDay$steps))
   print(mmsteps)
+```
+
+```
+##     mean   median 
+## 10766.19 10765.00
 ```
 
 ## What is the average daily activity pattern?
 
 Here is the average daily activity pattern with the graph shown below:
 
-```{r}
+
+```r
   avgPat <- aggregate(steps~interval,activity,mean,na.rm = TRUE)
   avgPat$time <- as.POSIXct(with(avgPat,paste(interval %/% 100, interval %% 100, sep=":")),format="%H:%M")
   plot <- ggplot(avgPat,aes(x=time,y=steps)) +
@@ -113,39 +132,70 @@ Here is the average daily activity pattern with the graph shown below:
   print(plot)
 ```
 
+![plot of chunk unnamed-chunk-8](assets/fig/unnamed-chunk-8-1.png) 
 
-```{r}
+
+
+```r
   with(avgPat,avgPat[steps == max(steps),])
+```
+
+```
+##     interval    steps                time
+## 104      835 206.1698 2015-03-15 08:35:00
 ```
 
 
 ## Inputing missing values
 
-```{r}
+
+```r
   mis <- aggregate(cnt~date,cbind(activity[is.na(activity$steps),],cnt=c(1)),sum,na.rm = FALSE)
   mis$dow <- weekdays(as.Date(mis$date),abbreviate=TRUE)
   print(mis[,c(1,3,2)])
 ```
 
-```{r}
+```
+##         date dow cnt
+## 1 2012-10-01 Mon 288
+## 2 2012-10-08 Mon 288
+## 3 2012-11-01 Thu 288
+## 4 2012-11-04 Sun 288
+## 5 2012-11-09 Fri 288
+## 6 2012-11-10 Sat 288
+## 7 2012-11-14 Wed 288
+## 8 2012-11-30 Fri 288
+```
+
+
+```r
   unique(mis$dow)
 ```
 
-```{r}
+```
+## [1] "Mon" "Thu" "Sun" "Fri" "Sat" "Wed"
+```
+
+
+```r
   ref_ds <- aggregate(steps~interval+weekdays(datetime,abbreviate=TRUE),activity,FUN=mean,na.rm=TRUE)
   colnames(ref_ds) <- c("interval","dow","avg_steps")
   ref_ds$dow <- factor(ref_ds$dow,levels = c("Mon","Tue","Wed","Thu","Fri","Sat","Sun"))
   ggplot(ref_ds,aes(x=interval,y=avg_steps)) + geom_line() + facet_grid("dow ~ .")
 ```
 
-```{r}
+![plot of chunk unnamed-chunk-12](assets/fig/unnamed-chunk-12-1.png) 
+
+
+```r
   activity$dow <- weekdays(activity$datetime,abbreviate=TRUE)
   af <- merge(activity,ref_ds,by=c("dow","interval"),all.x = TRUE)
   af <- af[with(af,order(date,interval)),]
   af$fixed_steps <- ifelse(is.na(af$steps),af$avg_steps,af$steps)
 ```
 
-```{r}
+
+```r
   stepsinforDaytwo <- setNames(
       aggregate(
           fixed_steps~as.Date(date),
@@ -160,10 +210,20 @@ Here is the average daily activity pattern with the graph shown below:
   grid.arrange(hist1, hist2, nrow=2)
 ```
 
-```{r}
+![plot of chunk unnamed-chunk-14](assets/fig/unnamed-chunk-14-1.png) 
+
+
+```r
   steps2 <- c(mean = mean(stepsinforDaytwo$steps),median = median(stepsinforDaytwo$steps))
   comparison <- rbind(source = mmsteps, fixed = steps2, delta = steps2-mmsteps)
   print(comparison)
+```
+
+```
+##               mean median
+## source 10766.18868  10765
+## fixed  10821.20960  11015
+## delta     55.02092    250
 ```
 
 
@@ -171,7 +231,8 @@ Here is the average daily activity pattern with the graph shown below:
 
 Yes there is some peak activity on Weekday and more consistent activity happening on the weekend.
 
-```{r}
+
+```r
 weekday_diff <- aggregate(
   steps~dow+interval, 
   with(
@@ -193,7 +254,10 @@ weekday_diff <- aggregate(
 )
 ```
 
-```{r}
+
+```r
   ggplot(weekday_diff,aes(x=interval,y=steps)) + geom_line() + facet_grid("dow ~ .")
 ```
+
+![plot of chunk unnamed-chunk-17](assets/fig/unnamed-chunk-17-1.png) 
 

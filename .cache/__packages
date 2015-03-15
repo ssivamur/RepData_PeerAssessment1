@@ -1,0 +1,15 @@
+base
+devtools
+rCharts
+googleVis
+shinyapps
+shiny
+bitops
+RCurl
+RJSONIO
+ggplot2
+plotly
+slidify
+knitr
+scales
+gridExtra
